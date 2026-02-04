@@ -1,11 +1,11 @@
-# DRL-Pytorch 実験リポジトリ
+# B3課題実験リポジトリ
 
-このリポジトリは、PyTorch ベースの強化学習アルゴリズム群に対して、
-「複数手法の一括実行」「結果の集計」「可視化」を行える実験環境を追加したものです。
+本リポジトリは、「DRL-Pytorch」( https://github.com/XinJingHao/DRL-Pytorch.git ) にて実装されている強化学習フレームワークをベースに、B3課題用に改変したものです。
 
 ---
 
 ## 1. クローン
+
 ```bash
 git clone https://github.com/sunny1113hu/B3kadai_2026.git
 cd B3kadai_2026
@@ -14,6 +14,7 @@ cd B3kadai_2026
 ---
 
 ## 2. 環境構築（uv）
+
 Python 3.11 前提です。`uv` を使って仮想環境と依存をまとめて管理します。
 
 ```bash
@@ -26,6 +27,7 @@ uv sync
 ---
 
 ## 3. Docker（GPU）
+
 GPU 環境で実験を回す場合は Docker を使えます。
 
 ```bash
@@ -39,17 +41,21 @@ docker compose run --rm -it drl
 ---
 
 ## 4. 実験の実行
+
 ### CartPole: Q-learning / DQN / PER DQN
+
 ```bash
 python experiments/compare.py --config experiments/configs/cartpole_compare_dqn3.json --mode all
 ```
 
 ### Atari: DQN / PER DQN（3ゲーム）
+
 ```bash
 python experiments/compare.py --config experiments/configs/atari_compare_dqn_per_3games.json --mode all
 ```
 
 出力先:
+
 ```
 experiments/outputs/<experiment_name>_<timestamp>/
 ```
@@ -57,6 +63,7 @@ experiments/outputs/<experiment_name>_<timestamp>/
 ---
 
 ## 5. 出力物
+
 `experiments/outputs/<experiment_name>_<timestamp>/` に以下が生成されます。
 
 - `manifest.json`（実行内容）
@@ -69,27 +76,33 @@ experiments/outputs/<experiment_name>_<timestamp>/
 ---
 
 ## 6. 可視化ノートブック
+
 `experiments/notebooks/plot_metrics.ipynb` を使うと、
 **プロット点の間隔（STEP_BIN）や平滑化（SMOOTH_WINDOW）** を自由に調整できます。
 
 ### VS Code で開く場合（推奨）
-1. `experiments/notebooks/plot_metrics.ipynb` を開く  
-2. カーネルに `.venv` を選択  
-3. 上から順にセルを実行  
+
+1. `experiments/notebooks/plot_metrics.ipynb` を開く
+2. カーネルに `.venv` を選択
+3. 上から順にセルを実行
 
 ### GUIモード
+
 - run をドロップダウンから選択
 - `Merge ENVS` で全環境を1枚にまとめる
 
 ### 手動モード
+
 `OUTPUT_DIR` を直接指定して描画します。
 
 ---
 
 ## 7. 実験設定の変更
+
 実験条件は `experiments/configs/*.json` で管理しています。
 
 よく使う項目:
+
 - `max_train_steps`, `eval_interval`, `eval_turns`
 - `random_steps`, `buffersize`, `target_freq`
 - `gamma`, `batch_size`
@@ -98,9 +111,11 @@ experiments/outputs/<experiment_name>_<timestamp>/
 ---
 
 ## 8. 動画保存について
+
 `record_video: true` で評価動画を保存します。
 
 必要な依存:
+
 ```bash
 uv add imageio imageio-ffmpeg moviepy
 uv sync
@@ -109,6 +124,7 @@ uv sync
 ---
 
 ## 9. 備考
+
 - Atariは学習時に報酬クリッピング（-1/0/+1）
 - 評価時はクリップなし（本来のスコア）
 - AtariのROMが無い場合は、初回のみ以下を実行します:
