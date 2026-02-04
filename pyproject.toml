@@ -1,0 +1,22 @@
+[project]
+name = "drl-pytorch"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11.5"
+dependencies = [
+    "gymnasium[accept-rom-license,atari]==0.29.1",
+    "imageio>=2.34.0",
+    "imageio-ffmpeg>=0.5.1",
+    "ipykernel>=7.1.0",
+    "ipywidgets>=8.1.8",
+    "matplotlib>=3.8",
+    "matplotlib-inline>=0.2.1",
+    "moviepy>=1.0.3",
+    "numpy==1.26.1",
+    "opencv-python>=4.11.0.86",
+    "packaging>=26.0",
+    "pygame>=2.5.2",
+    "tensorboard==2.15.1",
+    "torch==2.1.0",
+]

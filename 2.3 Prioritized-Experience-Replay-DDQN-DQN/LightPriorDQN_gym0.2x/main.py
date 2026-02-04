@@ -9,6 +9,7 @@ import os, shutil
 from datetime import datetime
 import argparse
 from utils import evaluate_policy,str2bool, LinearSchedule
+import csv
 
 '''Hyperparameter Setting'''
 parser = argparse.ArgumentParser()
@@ -23,6 +24,7 @@ parser.add_argument('--Max_train_steps', type=int, default=int(3e5), help='Max t
 parser.add_argument('--buffer_size', type=int, default=int(2e5), help='size of the replay buffer')
 parser.add_argument('--save_interval', type=int, default=int(5e4), help='Model saving interval, in steps.')
 parser.add_argument('--eval_interval', type=int, default=int(1e3), help='Model evaluating interval, in steps.')
+parser.add_argument('--eval_turns', type=int, default=3, help='Number of evaluation episodes')
 parser.add_argument('--warmup', type=int, default=int(3e3), help='steps for random policy to explore')
 parser.add_argument('--update_every', type=int, default=50, help='training frequency')
 
@@ -41,6 +43,11 @@ parser.add_argument('--alpha', type=float, default=0.6, help='alpha for PER')
 parser.add_argument('--beta_init', type=float, default=0.4, help='beta for PER')
 parser.add_argument('--beta_gain_steps', type=int, default=int(3e5), help='steps of beta from beta_init to 1.0')
 parser.add_argument('--replacement', type=str2bool, default=False, help='sample method')
+parser.add_argument('--record_video', type=str2bool, default=False, help='Record evaluation videos')
+parser.add_argument('--video_dir', type=str, default='videos', help='Directory to save videos')
+parser.add_argument('--video_episodes', type=int, default=1, help='Number of episodes to record')
+parser.add_argument('--video_prefix', type=str, default='', help='Prefix for video filenames')
+parser.add_argument('--csv_log', type=str, default='', help='CSV path to log eval scores')
 opt = parser.parse_args()
 print(opt)
 
@@ -73,6 +80,12 @@ def main():
         writepath = 'runs/LightPrior{}_{}'.format(algo_name,BriefEnvName[opt.EnvIdex]) + timenow
         if os.path.exists(writepath): shutil.rmtree(writepath)
         writer = SummaryWriter(log_dir=writepath)
+    if opt.csv_log:
+        os.makedirs(os.path.dirname(opt.csv_log), exist_ok=True)
+        if not os.path.exists(opt.csv_log):
+            with open(opt.csv_log, "w", newline="", encoding="utf-8") as f:
+                w = csv.writer(f)
+                w.writerow(["time", "step", "score", "seed", "env", "algo"])
 
     #Build model and replay buffer
     if not os.path.exists('model'): os.mkdir('model')
@@ -118,7 +131,7 @@ def main():
 
                 '''record & log'''
                 if (total_steps) % opt.eval_interval == 0:
-                    score = evaluate_policy(eval_env, model)
+                    score = evaluate_policy(eval_env, model, turns=opt.eval_turns)
                     if opt.write:
                         writer.add_scalar('ep_r', score, global_step=total_steps)
                         writer.add_scalar('noise', model.exp_noise, global_step=total_steps)
@@ -126,7 +139,11 @@ def main():
                         # priorities = buffer.priorities[0: buffer.size].cpu()
                         # writer.add_scalar('p_max', priorities.max(), global_step=total_steps)
                         # writer.add_scalar('p_sum', priorities.sum(), global_step=total_steps)
-                    print('EnvName:',BriefEnvName[opt.EnvIdex],'seed:',opt.seed,'steps: {}k'.format(int(total_steps/1000)),'score:', int(score))
+                    print('EnvName:',BriefEnvName[opt.EnvIdex],'seed:',opt.seed,'steps:', total_steps,'score:', int(score))
+                    if opt.csv_log:
+                        with open(opt.csv_log, "a", newline="", encoding="utf-8") as f:
+                            w = csv.writer(f)
+                            w.writerow([datetime.now().isoformat(timespec="seconds"), total_steps, score, opt.seed, BriefEnvName[opt.EnvIdex], algo_name])
 
                 total_steps += 1
 
@@ -136,15 +153,29 @@ def main():
 
                 if dw or tr: break
 
+        if opt.record_video:
+            from gymnasium.wrappers import RecordVideo
+            prefix = opt.video_prefix or f"LightPrior{algo_name}_{BriefEnvName[opt.EnvIdex]}_S{opt.seed}"
+            if os.path.exists(opt.video_dir):
+                shutil.rmtree(opt.video_dir)
+            video_env = gym.make(EnvName[opt.EnvIdex], render_mode="rgb_array")
+            if hasattr(video_env, "metadata") and video_env.metadata.get("render_fps") is None:
+                video_env.metadata["render_fps"] = 30
+            video_env = RecordVideo(
+                video_env,
+                video_folder=opt.video_dir,
+                name_prefix=prefix,
+                episode_trigger=lambda episode_id: True,
+                disable_logger=True,
+            )
+            evaluate_policy(video_env, model, turns=opt.video_episodes)
+            video_env.close()
+
     env.close()
     eval_env.close()
 
 if __name__ == '__main__':
     main()
-
-
-
-
 
 
 

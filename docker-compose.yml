@@ -1,0 +1,11 @@
+services:
+  drl:
+    build: .
+    image: drl-pytorch:cuda
+    volumes:
+      - .:/workspace
+    working_dir: /workspace
+    stdin_open: true
+    tty: true
+    shm_size: "1gb"
+    gpus: all

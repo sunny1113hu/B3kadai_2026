@@ -25,9 +25,8 @@ class QLearningAgent():
         target_Q = r + (1 - dw) * self.gamma * np.max(self.Q[s_next, :])
         self.Q[s, a] += self.lr * (target_Q - Q_sa)
 
-    def save(self):
+    def save(self, npy_file='model/q_table.npy'):
         '''save Q table'''
-        npy_file = 'model/q_table.npy'
         np.save(npy_file, self.Q)
         print(npy_file + ' saved.')
 
@@ -38,16 +37,23 @@ class QLearningAgent():
 
 
 
-def evaluate_policy(env, agent):
-    s, info = env.reset()
-    done, ep_r, steps = False, 0, 0
-    while not done:
-        # Take deterministic actions at test time
-        a = agent.select_action(s, deterministic=True)
-        s_next, r, dw, tr, info = env.step(a)
-        done = (dw or tr)
+def evaluate_policy(env, agent, state_encoder=None, turns=1):
+    total_r = 0
+    for _ in range(turns):
+        s, info = env.reset()
+        if state_encoder is not None:
+            s = state_encoder(s)
+        done, ep_r = False, 0
+        while not done:
+            # Take deterministic actions at test time
+            a = agent.select_action(s, deterministic=True)
+            s_next, r, dw, tr, info = env.step(a)
+            done = (dw or tr)
 
-        ep_r += r
-        steps += 1
-        s = s_next
-    return ep_r
+            ep_r += r
+            if state_encoder is not None:
+                s = state_encoder(s_next)
+            else:
+                s = s_next
+        total_r += ep_r
+    return total_r / turns

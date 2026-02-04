@@ -5,6 +5,7 @@ import gymnasium as gym
 import os, shutil
 import argparse
 import torch
+import csv
 
 
 '''Hyperparameter Setting'''
@@ -15,25 +16,45 @@ parser.add_argument('--write', type=str2bool, default=False, help='Use SummaryWr
 parser.add_argument('--render', type=str2bool, default=False, help='Render or Not')
 parser.add_argument('--Loadmodel', type=str2bool, default=False, help='Load pretrained model or Not')
 parser.add_argument('--ModelIdex', type=int, default=100, help='which model to load')
+parser.add_argument('--record_video', type=str2bool, default=False, help='Record evaluation videos')
+parser.add_argument('--video_dir', type=str, default='videos', help='Directory to save videos')
+parser.add_argument('--video_episodes', type=int, default=1, help='Number of episodes to record')
+parser.add_argument('--video_prefix', type=str, default='', help='Prefix for video filenames')
+parser.add_argument('--csv_log', type=str, default='', help='CSV path to log eval scores')
 
 parser.add_argument('--seed', type=int, default=0, help='random seed')
 parser.add_argument('--Max_train_steps', type=int, default=int(1e6), help='Max training steps')
 parser.add_argument('--save_interval', type=int, default=int(50e3), help='Model saving interval, in steps.')
 parser.add_argument('--eval_interval', type=int, default=int(2e3), help='Model evaluating interval, in steps.')
+parser.add_argument('--eval_turns', type=int, default=3, help='Number of evaluation episodes')
 parser.add_argument('--random_steps', type=int, default=int(3e3), help='steps for random policy to explore')
 parser.add_argument('--update_every', type=int, default=50, help='training frequency')
 
 parser.add_argument('--gamma', type=float, default=0.99, help='Discounted Factor')
 parser.add_argument('--net_width', type=int, default=200, help='Hidden net width')
 parser.add_argument('--lr', type=float, default=1e-4, help='Learning rate')
+parser.add_argument('--lr_init', type=float, default=None, help='Initial learning rate')
+parser.add_argument('--lr_end', type=float, default=None, help='Final learning rate')
+parser.add_argument('--lr_decay_steps', type=int, default=0, help='Steps for linear LR decay (0 uses Max_train_steps)')
 parser.add_argument('--batch_size', type=int, default=256, help='lenth of sliced trajectory')
 parser.add_argument('--exp_noise', type=float, default=0.2, help='explore noise')
 parser.add_argument('--noise_decay', type=float, default=0.99, help='decay rate of explore noise')
 parser.add_argument('--Double', type=str2bool, default=True, help='Whether to use Double Q-learning')
 parser.add_argument('--Duel', type=str2bool, default=True, help='Whether to use Duel networks')
 opt = parser.parse_args()
+if opt.lr_init is None:
+    opt.lr_init = opt.lr
+if opt.lr_end is None:
+    opt.lr_end = opt.lr_init
+if opt.lr_decay_steps <= 0:
+    opt.lr_decay_steps = opt.Max_train_steps
 opt.dvc = torch.device(opt.dvc) # from str to torch.device
 print(opt)
+
+
+def linear_schedule(t, t_max, v0, v1):
+    fraction = min(float(t) / t_max, 1.0)
+    return v0 + fraction * (v1 - v0)
 
 
 def main():
@@ -69,6 +90,12 @@ def main():
         writepath = 'runs/{}-{}_S{}_'.format(algo_name,BriefEnvName[opt.EnvIdex],opt.seed) + timenow
         if os.path.exists(writepath): shutil.rmtree(writepath)
         writer = SummaryWriter(log_dir=writepath)
+    if opt.csv_log:
+        os.makedirs(os.path.dirname(opt.csv_log), exist_ok=True)
+        if not os.path.exists(opt.csv_log):
+            with open(opt.csv_log, "w", newline="", encoding="utf-8") as f:
+                w = csv.writer(f)
+                w.writerow(["time", "step", "score", "seed", "env", "algo"])
 
     #Build model and replay buffer
     if not os.path.exists('model'): os.mkdir('model')
@@ -99,32 +126,51 @@ def main():
 
                 '''Update'''
                 # train 50 times every 50 steps rather than 1 training per step. Better!
+                lr = None
                 if total_steps >= opt.random_steps and total_steps % opt.update_every == 0:
                     for j in range(opt.update_every): agent.train()
+                    lr = linear_schedule(total_steps, opt.lr_decay_steps, opt.lr_init, opt.lr_end)
+                    for p in agent.q_net_optimizer.param_groups:
+                        p['lr'] = lr
 
                 '''Noise decay & Record & Log'''
                 if total_steps % 1000 == 0: agent.exp_noise *= opt.noise_decay
                 if total_steps % opt.eval_interval == 0:
-                    score = evaluate_policy(eval_env, agent, turns = 3)
+                    score = evaluate_policy(eval_env, agent, turns = opt.eval_turns)
                     if opt.write:
                         writer.add_scalar('ep_r', score, global_step=total_steps)
                         writer.add_scalar('noise', agent.exp_noise, global_step=total_steps)
-                    print('EnvName:',BriefEnvName[opt.EnvIdex],'seed:',opt.seed,'steps: {}k'.format(int(total_steps/1000)),'score:', int(score))
+                        if lr is not None:
+                            writer.add_scalar('lr', lr, global_step=total_steps)
+                    print('EnvName:',BriefEnvName[opt.EnvIdex],'seed:',opt.seed,'steps:', total_steps,'score:', int(score))
+                    if opt.csv_log:
+                        with open(opt.csv_log, "a", newline="", encoding="utf-8") as f:
+                            w = csv.writer(f)
+                            w.writerow([datetime.now().isoformat(timespec="seconds"), total_steps, score, opt.seed, BriefEnvName[opt.EnvIdex], algo_name])
                 total_steps += 1
 
                 '''save model'''
                 if total_steps % opt.save_interval == 0:
                     agent.save(algo_name,BriefEnvName[opt.EnvIdex],int(total_steps/1000))
+        if opt.record_video:
+            from gymnasium.wrappers import RecordVideo
+            prefix = opt.video_prefix or f"{algo_name}_{BriefEnvName[opt.EnvIdex]}_S{opt.seed}"
+            if os.path.exists(opt.video_dir):
+                shutil.rmtree(opt.video_dir)
+            video_env = gym.make(EnvName[opt.EnvIdex], render_mode="rgb_array")
+            if hasattr(video_env, "metadata") and video_env.metadata.get("render_fps") is None:
+                video_env.metadata["render_fps"] = 30
+            video_env = RecordVideo(
+                video_env,
+                video_folder=opt.video_dir,
+                name_prefix=prefix,
+                episode_trigger=lambda episode_id: True,
+                disable_logger=True,
+            )
+            evaluate_policy(video_env, agent, turns=opt.video_episodes)
+            video_env.close()
     env.close()
     eval_env.close()
 
 if __name__ == '__main__':
     main()
-
-
-
-
-
-
-
-

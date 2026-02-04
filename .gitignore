@@ -1,0 +1,57 @@
+# Python caches / build artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.so
+*.egg-info/
+build/
+dist/
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+.env
+.env.*
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Test / lint caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.cache/
+
+# Logs / temp files
+*.log
+*.out
+*.err
+*.tmp
+*.bak
+
+# OS / editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Experiment outputs
+**/runs/
+**/outputs/
+**/videos/
+**/tensorboard/
+**/tb/
+
+# Model checkpoints / arrays
+*.pt
+*.ckpt
+*.pth
+*.onnx
+*.tflite
+*.npy
+*.npz
+
+# Media outputs
+*.mp4
+*.gif

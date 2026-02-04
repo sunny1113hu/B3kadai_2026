@@ -3,7 +3,7 @@
 </div>
 
 <div align=center>
-Clean, Robust, and Unified PyTorch implementation of popular DRL Algorithms
+PyTorchで主要な深層強化学習（DRL）アルゴリズムを統一的に実装したリポジトリ
 </div>
 
 <div align=center>
@@ -16,16 +16,15 @@ Clean, Robust, and Unified PyTorch implementation of popular DRL Algorithms
 <br/>
 <br/>
 
-## 0.Star History
+## 0. Star履歴
 
 <div align="left">
 <img width="70%" height="auto" src="https://api.star-history.com/svg?repos=XinJingHao/Deep-Reinforcement-Learning-Algorithms-with-Pytorch&type=Date">
 </div>
 <br/>
 
-
-## 1.Dependencies
-This repository uses the following python dependencies unless explicitly stated:
+## 1. 依存関係
+このリポジトリは以下の依存を前提としています（必要に応じて各フォルダのREADMEも確認してください）。
 ```python
 gymnasium==0.29.1
 numpy==1.26.1
@@ -36,16 +35,16 @@ python==3.11.5
 
 <br/>
 
-## 2.How to use my code
-Enter the folder of the algorithm that you want to use, and run the **main.py** to train from scratch:
+## 2. 使い方（基本）
+使用したいアルゴリズムのフォルダに入って `main.py` を実行します。
 ```bash
 python main.py
 ```
-For more details, please check the **README.md** file in the corresponding algorithm folder.
+より詳細な設定は各アルゴリズムフォルダの `README.md` を参照してください。
 
 <br/>
 
-## 3. Separate links of the code
+## 3. アルゴリズム一覧（個別リポジトリ）
 + [1.Q-learning](https://github.com/XinJingHao/Q-learning)
 + [2.1Duel Double DQN](https://github.com/XinJingHao/Duel-Double-DQN-Pytorch)
 + [2.2Noisy Duel DDQN on Atari Game](https://github.com/XinJingHao/Noisy-Duel-DDQN-Atari-Pytorch)
@@ -62,63 +61,63 @@ For more details, please check the **README.md** file in the corresponding algor
 
 <br/>
 
-## 4. Recommended Resources for DRL
-### 4.1 Simulation Environments:
-+ [gym](https://www.gymlibrary.dev/) and [gymnasium](https://gymnasium.farama.org/) (Lightweight & Standard Env for DRL; Easy to start; Slow):
-<div align="left">
-<img width="60%" height="auto" src="https://github.com/XinJingHao/Images/blob/main/Env_images/gym.gif">
-</div>
-<br/>
+## 4. 実験管理（追加機能）
+このプロジェクトには「複数手法を一括で実行し、結果をまとめる実験マネージャ」が追加されています。
 
-+ [Isaac Sim](https://developer.nvidia.com/isaac/sim#isaac-lab) (NVIDIA’s physics simulation environment; GPU accelerated; Superfast):
-<div align="left">
-<img width="60%" height="auto" src="https://github.com/XinJingHao/Images/blob/main/Env_images/IsaacGym.gif">
-</div>
-<br/>
+- 実験スクリプト: `experiments/compare.py`
+- 設定ファイル: `experiments/configs/*.json`
+- 出力先: `experiments/outputs/<experiment_name>_<timestamp>/`
 
-+ [Sparrow](https://github.com/XinJingHao/Sparrow-V2) (Light Weight Simulator for Mobile Robot; DRL friendly):
-<div align="left">
-<img width="62%" height="auto" src="https://github.com/XinJingHao/Images/blob/main/Sparrow_V1/render.gif">
-</div>
-
-<p align="left">
-  <img src="https://github.com/XinJingHao/Images/blob/main/Sparrow_V2/case_v2.gif" width="10%" height="auto"  />
-  <img src="https://github.com/XinJingHao/Images/blob/main/Sparrow_V2/case2.gif" width="10%" height="auto" />
-  <img src="https://github.com/XinJingHao/Images/blob/main/Sparrow_V2/play.gif" width="10%" height="auto" />
-  <img src="https://github.com/XinJingHao/Images/blob/main/Sparrow_V3/N1.gif" width="10%" height="auto" />
-  <img src="https://github.com/XinJingHao/Images/blob/main/Sparrow_V3/N3.gif" width="10%" height="auto" />
-  <img src="https://github.com/XinJingHao/Images/blob/main/Sparrow_V3/N10.gif" width="10%" height="auto" />
-</p>
+詳細は `experiments/README.md` を参照してください（日本語でまとめ済み）。
 
 <br/>
 
-+ [ROS](https://www.ros.org/) (Popular & Comprehensive physical simulator for robots; Heavy and Slow):
-<div align="left">
-<img width="60%" height="auto" src="https://github.com/XinJingHao/Images/blob/main/Env_images/ros.mp4.gif">
-</div>
+## 5. 可視化と出力
+- TensorBoardログ: `runs/` 配下
+- 集計結果:
+  - `summary.csv`
+  - `summary.md`（日本語レポート）
+  - `summary.json`
+- グラフ:
+  - `ep_r_comparison.png`（全体）
+  - `ep_r_<EnvName>.png`（環境別）
+- 動画（RecordVideo）:
+  - `experiments/outputs/<experiment_name>_<timestamp>/videos/<run_id>_S<seed>/`
+
 <br/>
 
-+ [Webots](https://cyberbotics.com/) (Popular physical simulator for robots; Faster than ROS; Less realistic):
-<div align="left">
-<img width="60%" height="auto" src="https://github.com/XinJingHao/Images/blob/main/Env_images/webots.gif">
-</div>
+## 6. Docker（GPU）
+GPU対応のDocker環境が用意されています。
+```bash
+docker compose build
+docker compose run --rm -it drl
+```
+コンテナ内で実験を実行してください。
+
 <br/>
 
-+ [Envpool](https://envpool.readthedocs.io/en/latest/index.html) (Fast Vectorized Env)
+## 7. DRLの参考資料
+### 7.1 シミュレーション環境
++ [gym](https://www.gymlibrary.dev/) / [gymnasium](https://gymnasium.farama.org/)
++ [Isaac Sim](https://developer.nvidia.com/isaac/sim#isaac-lab)
++ [Sparrow](https://github.com/XinJingHao/Sparrow-V2)
++ [ROS](https://www.ros.org/)
++ [Webots](https://cyberbotics.com/)
++ [Envpool](https://envpool.readthedocs.io/en/latest/index.html)
 + [Other Popular Envs](https://github.com/clvrai/awesome-rl-envs)
 
-### 4.2 Books：
+### 7.2 書籍
 + [《Reinforcement learning: An introduction》](https://books.google.com.sg/books?hl=zh-CN&lr=&id=uWV0DwAAQBAJ&oi=fnd&pg=PR7&dq=Reinforcement+Learning&ots=mivIu01Xp6&sig=zQ6jkZRxJop4fkAgScMgzULGlbY&redir_esc=y#v=onepage&q&f=false)--Richard S. Sutton
-+ 《深度学习入门：基于Python的理论与实现》--斋藤康毅
++ 《深度学习入门：基于Python的理论と実装》--斋藤康毅
 
-### 4.3 Online Courses:
+### 7.3 オンライン講座
 + [RL Courses(bilibili)](https://www.bilibili.com/video/BV1UE411G78S?p=1&vd_source=df4b7370976f5ca5034cc18488eec368)--李宏毅(Hongyi Li)
 + [RL Courses(Youtube)](https://www.youtube.com/watch?v=z95ZYgPgXOY&list=PLJV_el3uVTsODxQFgzMzPLa16h6B8kWM_)--李宏毅(Hongyi Li)
 + [UCL Course on RL](https://www.davidsilver.uk/teaching/)--David Silver
 + [动手强化学习](https://hrl.boyuai.com/chapter/1/%E5%88%9D%E6%8E%A2%E5%BC%BA%E5%8C%96%E5%AD%A6%E4%B9%A0)--上海交通大学
 + [DRL Courses](https://github.com/wangshusen/DRL)--Shusen Wang
 
-### 4.4 Blogs:
+### 7.4 ブログ
 + [OpenAI Spinning Up](https://spinningup.openai.com/en/latest/)
 + [Policy Gradient Theorem --Cangxi](https://zhuanlan.zhihu.com/p/491647161)
 + [Policy Gradient Algorithms --Lilian](https://lilianweng.github.io/posts/2018-04-08-policy-gradient/)
@@ -131,7 +130,7 @@ For more details, please check the **README.md** file in the corresponding algor
 
 <br/>
 
-## 5. Important Papers
+## 8. 重要論文
 DQN: [Mnih V, Kavukcuoglu K, Silver D, et al. Human-level control through deep reinforcement learning[J]. nature, 2015, 518(7540): 529-533.](https://www.nature.com/articles/nature14236/?source=post_page)
 
 Double DQN: [Van Hasselt H, Guez A, Silver D. Deep reinforcement learning with double q-learning[C]//Proceedings of the AAAI conference on artificial intelligence. 2016, 30(1).](https://ojs.aaai.org/index.php/AAAI/article/view/10295)
@@ -158,8 +157,7 @@ ColorDynamic: [Generalizable, Scalable, Real-time, End-to-end Local Planner for 
 
 <br/>
 
-
-## 6. Citation
+## 9. Citation
 ```bash
 @misc{DRL-Pytorch,
   author = {Jinghao Xin},
@@ -170,74 +168,3 @@ ColorDynamic: [Generalizable, Scalable, Real-time, End-to-end Local Planner for 
   howpublished = {\url{https://github.com/XinJingHao/DRL-Pytorch}},
 }
 ```
-<br/>
-
-## 7. Training Curves of my Code:
-
-### [Q-learning:](https://github.com/XinJingHao/Q-learning)
-<img src="https://github.com/XinJingHao/Q-learning/blob/main/result.svg" width=320>
-
-### [Duel Double DQN:](https://github.com/XinJingHao/Duel-Double-DQN-Pytorch)
-|                           CartPole                           |                         LunarLander                          |
-| :----------------------------------------------------------: | :----------------------------------------------------------: |
-<img src="https://github.com/XinJingHao/DQN-DDQN-Pytorch/blob/main/IMGs/cp_all.png" width="320" height="200"> | <img src="https://github.com/XinJingHao/DQN-DDQN-Pytorch/blob/main/IMGs/lld_all.png" width="320" height="200">
-
-
-
-### [Noisy Duel DDQN on Atari Game:](https://github.com/XinJingHao/Noisy-Duel-DDQN-Atari-Pytorch)
-Pong| Enduro
-:-----------------------:|:-----------------------:|
-<img src="https://github.com/XinJingHao/Noisy-Duel-DDQN-Atari-Pytorch/blob/main/IMGs/Pong.png" width="320" height="200">| <img src="https://github.com/XinJingHao/Noisy-Duel-DDQN-Atari-Pytorch/blob/main/IMGs/Enduro.png" width="320" height="200">
-
-<br/>
-
-
-### [Prioritized DQN/DDQN:](https://github.com/XinJingHao/Prioritized-DQN-DDQN-Pytorch)
-|                           CartPole                           |                         LunarLander                          |
-| :----------------------------------------------------------: | :----------------------------------------------------------: |
-| <img src="https://github.com/XinJingHao/Prioritized-DQN-DDQN-Pytorch/blob/main/LightPriorDQN_gym0.2x/IMGs/CPV1.svg" width="320" height="200"> | <img src="https://github.com/XinJingHao/Prioritized-DQN-DDQN-Pytorch/blob/main/LightPriorDQN_gym0.2x/IMGs/LLDV2.svg" width="320" height="200"> |
-
-<br/>
-
-### [Categorical DQN:](https://github.com/XinJingHao/C51-Categorical-DQN-Pytorch)
-|                           CartPole                           |                         LunarLander                          |
-| :----------------------------------------------------------: | :----------------------------------------------------------: |
-| <img src="https://github.com/XinJingHao/C51-Categorical-DQN-Pytorch/blob/main/Images/cp.svg" width="320" height="200"> | <img src="https://github.com/XinJingHao/C51-Categorical-DQN-Pytorch/blob/main/Images/lld.svg" width="320" height="200"> |
-
-<br/>
-
-### [NoisyNet DQN:](https://github.com/XinJingHao/C51-Categorical-DQN-Pytorch)
-|                           CartPole                           |                         LunarLander                          |
-| :----------------------------------------------------------: | :----------------------------------------------------------: |
-| <img src="https://github.com/XinJingHao/NoisyNet-DQN-Pytorch/blob/main/IMGs/cpv1.png" width="320" height="200"> | <img src="https://github.com/XinJingHao/NoisyNet-DQN-Pytorch/blob/main/IMGs/lldv2.png" width="320" height="200"> |
-
-<br/>
-
-### [PPO Discrete:](https://github.com/XinJingHao/PPO-Discrete-Pytorch)
-<img src="https://github.com/XinJingHao/PPO-Discrete-Pytorch/blob/main/result.jpg" width=700>
-
-### [PPO Continuous:](https://github.com/XinJingHao/PPO-Continuous-Pytorch)
-<img src="https://github.com/XinJingHao/PPO-Continuous-Pytorch/blob/main/ppo_result.jpg">
-
-### [DDPG:](https://github.com/XinJingHao/DDPG-Pytorch)
-Pendulum| LunarLanderContinuous
-:-----------------------:|:-----------------------:|
-<img src="https://github.com/XinJingHao/DDPG-Pytorch/blob/main/IMGs/ddpg_pv0.svg" width="320" height="200">| <img src="https://github.com/XinJingHao/DDPG-Pytorch/blob/main/IMGs/ddpg_lld.svg" width="320" height="200"> 
-
-<br/>
-
-### [TD3:](https://github.com/XinJingHao/TD3-Pytorch)
-<img src="https://github.com/XinJingHao/TD3-Pytorch/blob/main/images/TD3results.png" width=700>
-
-### [SAC Continuous:](https://github.com/XinJingHao/SAC-Continuous-Pytorch)
-<img src="https://github.com/XinJingHao/SAC-Continuous-Pytorch/blob/main/imgs/result.jpg" width=700>
-
-### [SAC Discrete:](https://github.com/XinJingHao/SAC-Discrete-Pytorch)
-<img src="https://github.com/XinJingHao/SAC-Discrete-Pytorch/blob/main/imgs/sacd_result.jpg" width=700>
-
-### [Actor-Sharer-Learner (ASL):](https://github.com/XinJingHao/Actor-Sharer-Learner)
-<div align="left">
-<img width="70%" height="auto" src="https://github.com/XinJingHao/Images/blob/main/asl/ss_e.svg">
-</div>
-
-

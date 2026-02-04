@@ -73,10 +73,11 @@ class DeepQ_Agent(object):
 		self.Double = opt.Double
 		self.Duel = opt.Duel
 		self.Noisy = opt.Noisy
+		self.PER = getattr(opt, "PER", False)
 
 		if self.Duel: self.q_net = Duel_Q_Net(opt).to(self.dvc)
 		else: self.q_net = Q_Net(opt).to(self.dvc)
-		self.q_net_optimizer = torch.optim.Adam(self.q_net.parameters(), lr=opt.lr)
+		self.q_net_optimizer = torch.optim.Adam(self.q_net.parameters(), lr=opt.lr_init)
 		self.q_target = copy.deepcopy(self.q_net)
 		# Freeze target networks with respect to optimizers (only update via polyak averaging)
 		for p in self.q_target.parameters(): p.requires_grad = False
@@ -98,7 +99,10 @@ class DeepQ_Agent(object):
 
 	def train(self, replay_buffer):
 		self.train_counter += 1
-		s, a, r, s_next, dw = replay_buffer.sample(self.batch_size)
+		if self.PER:
+			s, a, r, s_next, dw, ind, weights = replay_buffer.sample(self.batch_size)
+		else:
+			s, a, r, s_next, dw = replay_buffer.sample(self.batch_size)
 
 		'''Compute the target Q value'''
 		with torch.no_grad():
@@ -115,13 +119,23 @@ class DeepQ_Agent(object):
 		current_q = self.q_net(s)
 		current_q_a = current_q.gather(1,a)
 
-		if self.huber_loss: q_loss = F.huber_loss(current_q_a, target_Q)
-		else: q_loss = F.mse_loss(current_q_a, target_Q)
+		if self.huber_loss:
+			loss_per_sample = F.huber_loss(current_q_a, target_Q, reduction='none')
+		else:
+			loss_per_sample = F.mse_loss(current_q_a, target_Q, reduction='none')
+		if self.PER:
+			q_loss = (loss_per_sample * weights).mean()
+		else:
+			q_loss = loss_per_sample.mean()
 
 		self.q_net_optimizer.zero_grad()
 		q_loss.backward()
 		torch.nn.utils.clip_grad_norm_(self.q_net.parameters(), 20)
 		self.q_net_optimizer.step()
+
+		if self.PER:
+			td_error = (target_Q - current_q_a).abs().squeeze(-1)
+			replay_buffer.update_priorities(ind, td_error + replay_buffer.eps)
 
 		# hard target update
 		if self.train_counter % self.target_freq == 0:
@@ -169,6 +183,53 @@ class ReplayBuffer_torch():
 			   self.next_state[ind].to(self.device),self.dw[ind].to(self.device)
 
 
+class PrioritizedReplayBuffer_torch():
+	def __init__(self, device, max_size=int(1e5), alpha=0.6, beta=0.4, eps=1e-6, replacement=False):
+		self.device = device
+		self.max_size = max_size
+		self.ptr = 0
+		self.size = 0
 
+		self.state = torch.zeros((max_size, 4, 84, 84), dtype=torch.uint8)
+		self.action = torch.zeros((max_size, 1), dtype=torch.int64)
+		self.reward = torch.zeros((max_size, 1))
+		self.next_state = torch.zeros((max_size, 4, 84, 84), dtype=torch.uint8)
+		self.dw = torch.zeros((max_size, 1), dtype=torch.bool)
+
+		self.priorities = torch.zeros((max_size,), dtype=torch.float32)
+		self.alpha = alpha
+		self.beta = beta
+		self.eps = eps
+		self.replacement = replacement
+		self.max_priority = 1.0
+
+	def add(self, state, action, reward, next_state, dw):
+		self.state[self.ptr] = state
+		self.action[self.ptr] = action
+		self.reward[self.ptr] = reward
+		self.next_state[self.ptr] = next_state
+		self.dw[self.ptr] = dw
+		self.priorities[self.ptr] = self.max_priority
+
+		self.ptr = (self.ptr + 1) % self.max_size
+		self.size = min(self.size + 1, self.max_size)
+
+	def sample(self, batch_size):
+		priorities = self.priorities[:self.size]
+		if priorities.sum() <= 0:
+			priorities = torch.ones_like(priorities)
+		probs = priorities.pow(self.alpha)
+		probs = probs / probs.sum()
+		ind = torch.multinomial(probs, num_samples=batch_size, replacement=self.replacement)
+		weights = (self.size * probs[ind]).pow(-self.beta)
+		weights = (weights / weights.max()).unsqueeze(-1)
+
+		return self.state[ind].to(self.device), self.action[ind].to(self.device), self.reward[ind].to(self.device), \
+			   self.next_state[ind].to(self.device), self.dw[ind].to(self.device), ind, weights.to(self.device)
+
+	def update_priorities(self, ind, priorities):
+		priorities = priorities.detach().clamp(min=self.eps).cpu()
+		self.priorities[ind] = priorities
+		self.max_priority = max(self.max_priority, float(priorities.max()))
 
 

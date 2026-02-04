@@ -18,6 +18,13 @@ Just run
 python main.py
 ```
 
+### CartPole with Q-learning (state discretization)
+CartPole has continuous observations, so Q-learning needs discretization:
+```
+python main.py --env CartPole-v1 --bins 6 12 6 12 --low -4.8 -3.0 -0.418 -3.5 --high 4.8 3.0 0.418 3.5 \
+  --max_train_steps 200000 --eval_interval 2000 --eval_max_episode_steps 500 --write True
+```
+
 
 ### Visualize the training curve
 You can use the [tensorboard](https://pytorch.org/docs/stable/tensorboard.html) to visualize the training curve. 
