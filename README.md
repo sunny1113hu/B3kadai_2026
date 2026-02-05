@@ -13,6 +13,44 @@ cd B3kadai_2026
 
 ---
 
+## 1.5 自分のGitHubに公開する手順
+クローンした後に **自分のGitHubにリポジトリを置きたい場合**の手順です。
+
+### 1) GitHub で新規リポジトリを作成
+- GitHub 上で **New repository**
+- リポジトリ名を決める（例: `DRL-Pytorch`）
+- **README / .gitignore は作成しない**（ローカルに既にあるため）
+
+### 2) ローカルで remote を設定
+```bash
+git remote -v
+```
+
+`origin` が無ければ追加:
+```bash
+git remote add origin https://github.com/<あなたのユーザー名>/<リポジトリ名>.git
+```
+
+`origin` が既にある場合は差し替え:
+```bash
+git remote set-url origin https://github.com/<あなたのユーザー名>/<リポジトリ名>.git
+```
+
+### 3) コミット
+```bash
+git status
+git add .
+git commit -m "Initial commit"
+```
+
+### 4) プッシュ
+```bash
+git branch -M main
+git push -u origin main
+```
+
+---
+
 ## 2. 環境構築（uv）
 
 Python 3.11 前提です。`uv` を使って仮想環境と依存をまとめて管理します。
@@ -133,3 +171,5 @@ uv sync
   ```
 
 必要に応じて設定で切り替え可能です。
+
+---
