@@ -93,7 +93,7 @@ python experiments/compare.py --config experiments/configs/cartpole_compare_dqn3
 ### Atari: DQN / PER DQN（3ゲーム）
 
 ```bash
-python experiments/compare.py --config experiments/configs/atari_compare_dqn_per_3games.yaml --mode all
+python experiments/compare.py --config experiments/configs/atari_compare_dqn_per_breakout.yaml --mode all
 ```
 
 出力先:
@@ -178,8 +178,14 @@ model_path: model/q_table_q_learning_cartpole_S0.npy
 ```
 
 評価専用に整理した YAML も用意しています:
-- `experiments/configs/cartpole_eval_only.yaml`
-- `experiments/configs/atari_eval_only.yaml`
+- `experiments/configs/eval_only/cartpole_eval_only.yaml`
+- `experiments/configs/eval_only/atari_eval_only.yaml`
+
+実行例:
+```bash
+python experiments/compare.py --config experiments/configs/eval_only/cartpole_eval_only.yaml --mode all
+python experiments/compare.py --config experiments/configs/eval_only/atari_eval_only.yaml --mode all
+```
 
 ---
 

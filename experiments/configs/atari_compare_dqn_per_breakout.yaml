@@ -1,0 +1,104 @@
+# Atari: DQN / PER-DQN 比較（Breakoutのみ）
+# ここだけ編集すれば実験条件を変更できます
+# 可能な限り全パラメータに説明を付けています
+
+experiment_name: atari_dqn_per_breakout
+python: .venv/bin/python               # 実行に使うPython
+results_dir: experiments/outputs       # 出力先
+seeds:
+  - 0                                   # 全run共通のseed
+
+runs:
+  # =========================
+  # Breakout
+  # =========================
+  - id: dqn_breakout
+    type: atari_dqn
+    env: BreakoutNoFrameskip-v4
+    env_index: 13
+
+    max_train_steps: 1000000            # 総ステップ数
+    eval_interval: 2500                 # 評価ログの記録間隔
+    eval_turns: 1                       # 評価エピソード数（平均スコアを記録）
+    save_interval: 200000               # モデル保存間隔
+
+    random_steps: 50000                 # 初期ランダム探索
+    buffersize: 100000                  # リプレイバッファサイズ
+    target_freq: 10000                  # ターゲットネット更新間隔
+    gamma: 0.99                         # 割引率
+
+    # 学習率（線形スケジューラ）
+    lr: 0.0001                          # 互換用（lr_init/lr_endが優先）
+    lr_init: 0.0001                     # 学習率の開始値
+    lr_end: 0.00005                     # 学習率の終了値
+    lr_decay_steps: 1000000             # 何ステップで lr_end に到達するか
+    # 更新タイミング: random_steps 以降、学習が走るたびに lr を更新（線形）
+
+    batch_size: 64
+
+    # ε-greedy
+    init_e: 1.0                         # εの初期値
+    anneal_frac: 1000000                # 何ステップでfinal_eに到達するか
+    final_e: 0.1                        # εの最終値
+
+    double: false                       # Double DQN
+    duel: false                         # Dueling
+    noisy: false                        # NoisyNet
+    PER: false                          # Prioritized Replayを使うか
+
+    write: true                         # TensorBoard記録
+    device: cuda                        # cuda / cpu
+
+    noop_reset: false                   # NoopResetEnvを使うか
+    huber_loss: true                    # Huber lossを使うか
+
+    record_video: true
+    video_episodes: 1
+
+  - id: per_breakout
+    type: atari_dqn
+    env: BreakoutNoFrameskip-v4
+    env_index: 13
+
+    max_train_steps: 1000000
+    eval_interval: 2500
+    eval_turns: 1
+    save_interval: 200000
+
+    random_steps: 50000
+    buffersize: 100000
+    target_freq: 10000
+    gamma: 0.99
+
+    lr: 0.0001
+    lr_init: 0.0001
+    lr_end: 0.00005
+    lr_decay_steps: 1000000
+    # 更新タイミング: random_steps 以降、学習が走るたびに lr を更新（線形）
+
+    batch_size: 64
+
+    init_e: 1.0
+    anneal_frac: 1000000
+    final_e: 0.1
+
+    double: false
+    duel: false
+    noisy: false
+
+    # PER設定
+    PER: true
+    per_alpha: 0.6                      # 優先度係数
+    per_beta_init: 0.4                  # 重要度補正の初期値
+    per_beta_gain_steps: 1000000        # betaが1.0に到達するまでのステップ
+    per_eps: 1.0e-06                    # 小さな定数（ゼロ割防止）
+    per_replacement: false              # 重複サンプリング許可
+
+    write: true
+    device: cuda
+
+    noop_reset: false
+    huber_loss: true
+
+    record_video: true
+    video_episodes: 1

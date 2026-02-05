@@ -8,9 +8,9 @@
 python experiments/compare.py --config experiments/configs/cartpole_compare_dqn3.json --mode all
 ```
 
-### Atari: DQN / PER DQN（3ゲーム）
+### Atari: DQN / PER DQN（Breakout）
 ```bash
-python experiments/compare.py --config experiments/configs/atari_compare_dqn_per_3games.json --mode all
+python experiments/compare.py --config experiments/configs/atari_compare_dqn_per_breakout.yaml --mode all
 ```
 
 ## 2. 出力物
@@ -81,7 +81,7 @@ YAML ではコメントを書けるので、メモ用途にも便利です。
 
 ## 5. 実行例
 ```bash
-python experiments/compare.py --config experiments/configs/atari_compare_dqn_per_3games.json --mode all
+python experiments/compare.py --config experiments/configs/atari_compare_dqn_per_breakout.yaml --mode all
 ```
 
 ## 6. Docker (GPU)
