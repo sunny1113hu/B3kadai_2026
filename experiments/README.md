@@ -56,7 +56,8 @@ uv add imageio imageio-ffmpeg moviepy
 Linux では `ffmpeg` も必要です。
 
 ## 4. 設定ファイル（config）の編集
-`experiments/configs/*.json` でパラメータを管理します。
+`experiments/configs/*.json` / `*.yaml` でパラメータを管理します。  
+YAML ではコメントを書けるので、メモ用途にも便利です。
 
 ### 主要パラメータ
 - `max_train_steps`: 学習ステップ

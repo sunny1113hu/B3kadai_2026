@@ -75,6 +75,10 @@ docker compose run --rm -it drl
 
 - コンテナ内で `python experiments/compare.py ...` を実行してください
 - 動画保存には `ffmpeg` が必要です（Dockerfile で導入済み）
+- 依存追加後は **再ビルド**が必要です（例: YAML対応のPyYAML追加など）
+  ```bash
+  docker compose build --no-cache
+  ```
 
 ---
 
@@ -83,13 +87,13 @@ docker compose run --rm -it drl
 ### CartPole: Q-learning / DQN / PER DQN
 
 ```bash
-python experiments/compare.py --config experiments/configs/cartpole_compare_dqn3.json --mode all
+python experiments/compare.py --config experiments/configs/cartpole_compare_dqn3.yaml --mode all
 ```
 
 ### Atari: DQN / PER DQN（3ゲーム）
 
 ```bash
-python experiments/compare.py --config experiments/configs/atari_compare_dqn_per_3games.json --mode all
+python experiments/compare.py --config experiments/configs/atari_compare_dqn_per_3games.yaml --mode all
 ```
 
 出力先:
@@ -137,7 +141,8 @@ experiments/outputs/<experiment_name>_<timestamp>/
 
 ## 7. 実験設定の変更
 
-実験条件は `experiments/configs/*.json` で管理しています。
+実験条件は `experiments/configs/*.yaml` で管理しています。
+YAML ではコメントを書けるため、メモを残したい場合に便利です。
 
 よく使う項目:
 
@@ -145,6 +150,31 @@ experiments/outputs/<experiment_name>_<timestamp>/
 - `random_steps`, `buffersize`, `target_freq`
 - `gamma`, `batch_size`
 - `lr_init`, `lr_end`, `lr_decay_steps`（学習率スケジューラ）
+
+### 学習率スケジューラの挙動（線形減衰）
+- **CartPole DQN / PER**: `update_every` のタイミングで lr を更新  
+- **Atari DQN / PER**: `random_steps` 以降、学習が走るたびに lr を更新  
+（`lr_init` と `lr_end` を同じにすると固定学習率になります）
+
+### 保存済みモデルで評価だけ行う（再実行）
+学習せずに **保存済みモデルを評価だけ**したい場合は、各 run に以下を追加します。
+
+```yaml
+load_model: true
+eval_only: true
+model_index: 200   # steps/1000（DQN/Atari/PER用。例: 200000 steps -> 200）
+```
+
+Q-learning の場合は `model_path` を指定します。
+```yaml
+load_model: true
+eval_only: true
+model_path: model/q_table_q_learning_cartpole_S0.npy
+```
+
+評価専用に整理した YAML も用意しています:
+- `experiments/configs/cartpole_eval_only.yaml`
+- `experiments/configs/atari_eval_only.yaml`
 
 ---
 

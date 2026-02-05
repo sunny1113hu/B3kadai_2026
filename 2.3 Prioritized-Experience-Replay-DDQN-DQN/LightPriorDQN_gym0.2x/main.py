@@ -48,6 +48,7 @@ parser.add_argument('--video_dir', type=str, default='videos', help='Directory t
 parser.add_argument('--video_episodes', type=int, default=1, help='Number of episodes to record')
 parser.add_argument('--video_prefix', type=str, default='', help='Prefix for video filenames')
 parser.add_argument('--csv_log', type=str, default='', help='CSV path to log eval scores')
+parser.add_argument('--eval_only', type=str2bool, default=False, help='Only evaluate a loaded model')
 opt = parser.parse_args()
 print(opt)
 
@@ -96,6 +97,39 @@ def main():
     exp_noise_scheduler = LinearSchedule(opt.noise_decay_steps, opt.exp_noise_init, opt.exp_noise_end)
     beta_scheduler = LinearSchedule(opt.beta_gain_steps, opt.beta_init, 1.0)
     lr_scheduler = LinearSchedule(opt.lr_decay_steps, opt.lr_init, opt.lr_end)
+
+    if opt.eval_only:
+        step_mark = opt.ModelIdex * 1000 if opt.Loadmodel else 0
+        score = evaluate_policy(eval_env, model, turns=opt.eval_turns)
+        print('EnvName:',BriefEnvName[opt.EnvIdex],'seed:',opt.seed,'steps:', step_mark,'score:', score)
+        if opt.write:
+            writer.add_scalar('ep_r', score, global_step=step_mark)
+        if opt.csv_log:
+            with open(opt.csv_log, "a", newline="", encoding="utf-8") as f:
+                w = csv.writer(f)
+                w.writerow([datetime.now().isoformat(timespec="seconds"), step_mark, score, opt.seed, BriefEnvName[opt.EnvIdex], algo_name])
+        if opt.record_video:
+            from gymnasium.wrappers import RecordVideo
+            prefix = opt.video_prefix or f"LightPrior{algo_name}_{BriefEnvName[opt.EnvIdex]}_S{opt.seed}"
+            if os.path.exists(opt.video_dir):
+                shutil.rmtree(opt.video_dir)
+            video_env = gym.make(EnvName[opt.EnvIdex], render_mode="rgb_array")
+            if hasattr(video_env, "metadata") and video_env.metadata.get("render_fps") is None:
+                video_env.metadata["render_fps"] = 30
+            video_env = RecordVideo(
+                video_env,
+                video_folder=opt.video_dir,
+                name_prefix=prefix,
+                episode_trigger=lambda episode_id: True,
+                disable_logger=True,
+            )
+            evaluate_policy(video_env, model, turns=opt.video_episodes)
+            video_env.close()
+        env.close()
+        eval_env.close()
+        if opt.write:
+            writer.close()
+        return
 
     if opt.render:
         score = evaluate_policy(eval_env, model, 20)
@@ -176,7 +210,6 @@ def main():
 
 if __name__ == '__main__':
     main()
-
 
 
 

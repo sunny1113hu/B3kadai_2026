@@ -1,0 +1,127 @@
+# CartPole: Q-learning / DQN / PER-DQN 比較
+# ここだけ編集すれば実験条件を変更できます
+# 可能な限り全パラメータに説明を付けています
+
+# 出力フォルダ名に使われる識別子（任意）
+experiment_name: cartpole_q_dqn_per_compare
+
+# 実行に使うPython。uvなら .venv/bin/python を推奨
+python: .venv/bin/python
+
+# 結果の出力先
+results_dir: experiments/outputs
+
+# すべてのrunに適用されるseed（個別指定が無ければここが使われる）
+seeds:
+  - 0
+
+# 実行する手法のリスト
+runs:
+  # --- Q-learning ---
+  - id: q_learning              # 出力名（metrics / videos などの識別子）
+    type: q_learning            # 実行コード種別（固定）
+    env: CartPole-v1            # 環境名
+
+    max_train_steps: 200000     # 学習ステップ総数
+    eval_interval: 500          # 評価ログの記録間隔（学習中の評価頻度）
+    eval_turns: 5               # 評価エピソード数（この回数の平均スコアをCSVに記録）
+    save_interval: 200000       # モデル保存間隔（0なら最後のみ）
+
+    write: true                 # TensorBoardへ記録するか
+
+    # Q-learning 固有
+    lr: 0.2                      # 学習率
+    gamma: 0.99                  # 割引率
+    epsilon: 0.1                 # ε-greedy（探索率）
+
+    # 状態の離散化（CartPole向け）
+    max_episode_steps: 500       # 学習エピソードの最大ステップ
+    eval_max_episode_steps: 500  # 評価エピソードの最大ステップ
+    bins: [6, 12, 6, 12]         # 連続状態を離散化する分割数
+    low: [-4.8, -3.0, -0.418, -3.5]  # クリップ下限
+    high: [4.8, 3.0, 0.418, 3.5]     # クリップ上限
+
+    run_name: q_learning_cartpole  # TensorBoard / 保存名に使う
+
+    # 評価動画
+    record_video: true          # 評価動画を保存するか
+    video_episodes: 1           # 動画として保存する評価エピソード数
+
+  # --- DQN ---
+  - id: dqn
+    type: dqn_cartpole
+    env: CartPole-v1
+    env_index: 0                # CartPoleの内部index（固定）
+
+    max_train_steps: 200000
+    eval_interval: 500          # 評価ログの記録間隔
+    eval_turns: 5               # 評価エピソード数（平均スコアを記録）
+    save_interval: 50000        # モデル保存間隔
+
+    # 探索
+    random_steps: 3000          # 学習開始前のランダム探索ステップ
+    exp_noise: 0.2              # ε-greedy相当の探索率
+    noise_decay: 0.99           # 探索率の減衰（1000ステップごとに適用）
+
+    # 学習設定
+    update_every: 50            # 何ステップごとに更新するか
+    gamma: 0.99                 # 割引率
+    net_width: 200              # ネットワークの隠れ層幅
+    batch_size: 64              # バッチサイズ
+
+    # 学習率（線形スケジューラ）
+    lr: 0.0001                  # 互換用（lr_init/lr_endが優先）
+    lr_init: 0.0001             # 学習率の開始値
+    lr_end: 0.00005             # 学習率の終了値
+    lr_decay_steps: 200000      # 何ステップで lr_end に到達するか
+    # 更新タイミング: update_every のタイミングで lr を更新（線形）
+
+    double: false               # Double DQN を使うか
+    duel: false                 # Dueling ネットワークを使うか
+
+    write: true                 # TensorBoardへ記録するか
+    device: cuda                # cuda / cpu
+
+    record_video: true
+    video_episodes: 1
+
+  # --- PER-DQN ---
+  - id: per_dqn
+    type: prioritized_dqn
+    env: CartPole-v1
+    env_index: 0
+
+    max_train_steps: 200000
+    buffer_size: 100000         # リプレイバッファサイズ
+    save_interval: 50000
+    eval_interval: 500          # 評価ログの記録間隔
+    eval_turns: 5               # 評価エピソード数（平均スコアを記録）
+
+    # 探索
+    warmup: 3000                # 学習前のランダム探索
+    exp_noise_init: 0.6         # 探索率の初期値
+    exp_noise_end: 0.03         # 探索率の最終値
+    noise_decay_steps: 100000   # 何ステップで exp_noise_end に到達するか
+
+    # 学習設定
+    update_every: 50
+    gamma: 0.99
+    net_width: 200
+    batch_size: 64
+
+    # 学習率（線形スケジューラ）
+    lr_init: 0.0001
+    lr_end: 0.00005
+    lr_decay_steps: 200000
+    # 更新タイミング: update_every のタイミングで lr を更新（線形）
+
+    # PER設定
+    ddqn: false                 # PER側でDouble DQNを使うか
+    alpha: 0.6                  # PERの優先度係数
+    beta_init: 0.4              # 重要度サンプリング補正の初期値
+    beta_gain_steps: 200000     # betaが1.0に到達するまでのステップ数
+    replacement: false          # サンプリングを重複許可にするか
+
+    write: true
+    record_video: true
+    video_episodes: 1

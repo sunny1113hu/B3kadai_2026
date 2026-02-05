@@ -21,6 +21,7 @@ parser.add_argument('--video_dir', type=str, default='videos', help='Directory t
 parser.add_argument('--video_episodes', type=int, default=1, help='Number of episodes to record')
 parser.add_argument('--video_prefix', type=str, default='', help='Prefix for video filenames')
 parser.add_argument('--csv_log', type=str, default='', help='CSV path to log eval scores')
+parser.add_argument('--eval_only', type=str2bool, default=False, help='Only evaluate a loaded model')
 
 parser.add_argument('--Max_train_steps', type=int, default=int(1E6), help='Max training steps')
 parser.add_argument('--save_interval', type=int, default=int(1E5), help='Model saving interval, in steps.')
@@ -85,6 +86,60 @@ def main():
     if not os.path.exists('model'): os.mkdir('model')
     agent = DeepQ_Agent(opt)
     if opt.Loadmodel: agent.load(opt.ExperimentName,opt.ModelIdex)
+
+    if opt.eval_only:
+        if opt.write:
+            from torch.utils.tensorboard import SummaryWriter
+            timenow = str(datetime.now())[0:-7]
+            timenow = ' ' + timenow[0:13] + '_' + timenow[14:16] + '_' + timenow[-2::]
+            writepath = f'runs/{opt.ExperimentName}_S{opt.seed}' + timenow
+            if os.path.exists(writepath): shutil.rmtree(writepath)
+            writer = SummaryWriter(log_dir=writepath)
+        if opt.csv_log:
+            os.makedirs(os.path.dirname(opt.csv_log), exist_ok=True)
+            if not os.path.exists(opt.csv_log):
+                with open(opt.csv_log, "w", newline="", encoding="utf-8") as f:
+                    w = csv.writer(f)
+                    w.writerow(["time", "step", "score", "seed", "env", "algo"])
+
+        step_mark = opt.ModelIdex * 1000 if opt.Loadmodel else 0
+        score = evaluate_policy(eval_env, agent, seed=opt.seed, turns=opt.eval_turns)
+        print(f"{opt.ExperimentName}, Seed:{opt.seed}, Step:{step_mark}, Score:{score}")
+        if opt.write:
+            writer.add_scalar('ep_r', score, global_step=step_mark)
+        if opt.csv_log:
+            with open(opt.csv_log, "a", newline="", encoding="utf-8") as f:
+                w = csv.writer(f)
+                w.writerow([datetime.now().isoformat(timespec="seconds"), step_mark, score, opt.seed, opt.EnvName, opt.algo_name])
+
+        if opt.record_video:
+            from gymnasium.wrappers import RecordVideo
+            prefix = opt.video_prefix or f"{opt.ExperimentName}_S{opt.seed}"
+            if os.path.exists(opt.video_dir):
+                shutil.rmtree(opt.video_dir)
+            video_env = make_env_tianshou(
+                opt.EnvName,
+                noop_reset=opt.noop_reset,
+                episode_life=False,
+                clip_rewards=False,
+                render_mode="rgb_array",
+            )
+            if hasattr(video_env, "metadata") and video_env.metadata.get("render_fps") is None:
+                video_env.metadata["render_fps"] = 30
+            video_env = RecordVideo(
+                video_env,
+                video_folder=opt.video_dir,
+                name_prefix=prefix,
+                episode_trigger=lambda episode_id: True,
+                disable_logger=True,
+            )
+            evaluate_policy(video_env, agent, seed=opt.seed + 999, turns=opt.video_episodes)
+            video_env.close()
+
+        eval_env.close()
+        if opt.write:
+            writer.close()
+        return
 
     if opt.render:
         while True:

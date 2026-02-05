@@ -77,6 +77,7 @@ def parse_args():
     parser.add_argument('--video_episodes', type=int, default=1, help='Number of episodes to record')
     parser.add_argument('--video_prefix', type=str, default='', help='Prefix for video filenames')
     parser.add_argument('--csv_log', type=str, default='', help='CSV path to log eval scores')
+    parser.add_argument('--eval_only', type=str2bool, default=False, help='Only evaluate a loaded model')
     return parser.parse_args()
 
 
@@ -136,6 +137,38 @@ def main():
             with open(args.csv_log, "w", newline="", encoding="utf-8") as f:
                 csv_writer = csv.writer(f)
                 csv_writer.writerow(["time", "step", "episode_reward", "seed", "env"])
+    if args.eval_only:
+        score = evaluate_policy(eval_env, agent, state_encoder=state_encoder, turns=args.eval_turns)
+        step_mark = args.max_train_steps if args.max_train_steps > 0 else 0
+        print(f'EnvName:{args.env}, Seed:{seed}, Steps:{step_mark}, Episode reward:{score}')
+        if args.write:
+            writer.add_scalar('ep_r', score, global_step=step_mark)
+        if args.csv_log:
+            with open(args.csv_log, "a", newline="", encoding="utf-8") as f:
+                csv_writer = csv.writer(f)
+                csv_writer.writerow([datetime.now().isoformat(timespec="seconds"), step_mark, score, seed, args.env])
+        if args.record_video:
+            from gymnasium.wrappers import RecordVideo
+            prefix = args.video_prefix or args.run_name or "q_learning"
+            if os.path.exists(args.video_dir):
+                shutil.rmtree(args.video_dir)
+            video_env = build_env(args.env, args.eval_max_episode_steps, render_mode="rgb_array")
+            if hasattr(video_env, "metadata") and video_env.metadata.get("render_fps") is None:
+                video_env.metadata["render_fps"] = 30
+            video_env = RecordVideo(
+                video_env,
+                video_folder=args.video_dir,
+                name_prefix=prefix,
+                episode_trigger=lambda episode_id: True,
+                disable_logger=True,
+            )
+            evaluate_policy(video_env, agent, state_encoder=state_encoder, turns=args.video_episodes)
+            video_env.close()
+        env.close()
+        eval_env.close()
+        if args.write:
+            writer.close()
+        return
     while total_steps < args.max_train_steps:
         s, info = env.reset(seed=seed)
         seed += 1

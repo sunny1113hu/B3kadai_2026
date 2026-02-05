@@ -21,8 +21,22 @@ RUNS_ROOT = {
 }
 
 
+def detect_config_format(path):
+    suffix = Path(path).suffix.lower()
+    if suffix in {".yaml", ".yml"}:
+        return "yaml"
+    return "json"
+
+
 def load_config(path):
+    fmt = detect_config_format(path)
     with open(path, "r", encoding="utf-8") as f:
+        if fmt == "yaml":
+            try:
+                import yaml
+            except ImportError as exc:
+                raise SystemExit("PyYAML is required for .yaml configs. Run: uv add pyyaml") from exc
+            return yaml.safe_load(f)
         return json.load(f)
 
 
@@ -82,6 +96,12 @@ def build_command(run_cfg, seed, python_exec):
             args += ["--log_root", run_cfg["log_root"]]
         if run_cfg.get("model_dir"):
             args += ["--model_dir", run_cfg["model_dir"]]
+        if run_cfg.get("load_model"):
+            args += ["--load_model", "True"]
+        if run_cfg.get("model_path"):
+            args += ["--model_path", run_cfg["model_path"]]
+        if run_cfg.get("eval_only"):
+            args += ["--eval_only", "True"]
         if run_cfg.get("csv_log"):
             args += ["--csv_log", run_cfg["csv_log"]]
         if run_cfg.get("record_video"):
@@ -121,6 +141,12 @@ def build_command(run_cfg, seed, python_exec):
         ]
         if "device" in run_cfg:
             args += ["--dvc", run_cfg["device"]]
+        if run_cfg.get("load_model"):
+            args += ["--Loadmodel", "True"]
+        if run_cfg.get("model_index") is not None:
+            args += ["--ModelIdex", str(run_cfg.get("model_index"))]
+        if run_cfg.get("eval_only"):
+            args += ["--eval_only", "True"]
         if run_cfg.get("csv_log"):
             args += ["--csv_log", run_cfg["csv_log"]]
         if run_cfg.get("record_video"):
@@ -159,6 +185,12 @@ def build_command(run_cfg, seed, python_exec):
         ]
         if "device" in run_cfg:
             args += ["--device", run_cfg["device"]]
+        if run_cfg.get("load_model"):
+            args += ["--Loadmodel", "True"]
+        if run_cfg.get("model_index") is not None:
+            args += ["--ModelIdex", str(run_cfg.get("model_index"))]
+        if run_cfg.get("eval_only"):
+            args += ["--eval_only", "True"]
         if "noop_reset" in run_cfg:
             args += ["--noop_reset", str(run_cfg["noop_reset"])]
         if "huber_loss" in run_cfg:
@@ -222,6 +254,12 @@ def build_command(run_cfg, seed, python_exec):
             "--replacement", str(run_cfg.get("replacement", False)),
             "--write", str(run_cfg.get("write", True)),
         ]
+        if run_cfg.get("load_model"):
+            args += ["--Loadmodel", "True"]
+        if run_cfg.get("model_index") is not None:
+            args += ["--ModelIdex", str(run_cfg.get("model_index"))]
+        if run_cfg.get("eval_only"):
+            args += ["--eval_only", "True"]
         if run_cfg.get("csv_log"):
             args += ["--csv_log", run_cfg["csv_log"]]
         if run_cfg.get("record_video"):
@@ -253,6 +291,15 @@ def run_command(cmd, cwd=None, workdir=None, dry_run=False):
 def write_json(path, data):
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=True)
+
+
+def write_yaml(path, data):
+    try:
+        import yaml
+    except ImportError as exc:
+        raise SystemExit("PyYAML is required to write .yaml configs. Run: uv add pyyaml") from exc
+    with open(path, "w", encoding="utf-8") as f:
+        yaml.safe_dump(data, f, sort_keys=False, allow_unicode=False)
 
 
 def summarize_run(run):
@@ -697,13 +744,14 @@ def find_latest_output(results_root):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config", type=str, default=DEFAULT_CONFIG, help="Path to config JSON")
+    parser.add_argument("--config", type=str, default=DEFAULT_CONFIG, help="Path to config JSON/YAML")
     parser.add_argument("--mode", type=str, default="all", choices=["run", "report", "all"])
     parser.add_argument("--output", type=str, default="", help="Use an existing output dir for report")
     parser.add_argument("--dry_run", action="store_true", help="Print commands without running")
     parser.add_argument("--no_plot", action="store_true", help="Skip generating plots")
     args = parser.parse_args()
 
+    config_format = detect_config_format(args.config)
     config = load_config(args.config)
     experiment_name = config.get("experiment_name", "experiment")
     results_root = config.get("results_dir", "experiments/outputs")
@@ -728,6 +776,8 @@ def main():
         output_dir = Path(results_root) / f"{experiment_name}_{timestamp}"
         ensure_dir(output_dir)
         write_json(output_dir / "config.json", config)
+        if config_format == "yaml":
+            write_yaml(output_dir / "config.yaml", config)
 
         manifest = {
             "experiment_name": experiment_name,
@@ -742,6 +792,15 @@ def main():
             run_seeds = run_cfg.get("seeds", config.get("seeds", [0]))
             for seed in run_seeds:
                 run_cfg_effective = dict(run_cfg)
+                if run_cfg_effective.get("eval_only"):
+                    run_cfg_effective["eval_only"] = bool(run_cfg_effective.get("eval_only"))
+                    if not run_cfg_effective.get("load_model"):
+                        run_cfg_effective["load_model"] = True
+                    if run_type in ("dqn_cartpole", "atari_dqn", "prioritized_dqn"):
+                        if run_cfg_effective.get("model_index") is None:
+                            max_steps = run_cfg_effective.get("max_train_steps", 0)
+                            if max_steps:
+                                run_cfg_effective["model_index"] = int(max_steps // 1000)
                 if run_cfg_effective.get("record_video"):
                     run_cfg_effective["record_video"] = bool(run_cfg_effective.get("record_video"))
                     if not run_cfg_effective.get("video_dir"):

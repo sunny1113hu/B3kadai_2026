@@ -1,0 +1,94 @@
+# CartPole: 保存済みモデルの評価専用
+# 学習は行わず、保存済みモデルの性能を評価します
+
+experiment_name: cartpole_eval_only
+python: .venv/bin/python
+results_dir: experiments/outputs
+seeds:
+  - 0
+
+runs:
+  # --- Q-learning ---
+  - id: q_learning_eval
+    type: q_learning
+    env: CartPole-v1
+
+    max_train_steps: 200000     # 表示用ステップ（実学習はしない）
+    eval_interval: 500          # 評価ログの記録間隔
+    eval_turns: 5               # 評価エピソード数（平均スコアを記録）
+    save_interval: 0            # 評価のみなので保存しない
+    write: true                 # TensorBoard記録
+
+    # Q-learning 固有（学習時と同じ設定が必要）
+    lr: 0.2
+    gamma: 0.99
+    epsilon: 0.1
+
+    # 状態の離散化（学習時と同じ設定）
+    max_episode_steps: 500
+    eval_max_episode_steps: 500
+    bins: [6, 12, 6, 12]
+    low: [-4.8, -3.0, -0.418, -3.5]
+    high: [4.8, 3.0, 0.418, 3.5]
+
+    # 評価専用指定
+    load_model: true            # 保存済みモデルを読み込む
+    eval_only: true             # 学習せず評価だけ行う
+    model_path: model/q_table_q_learning_cartpole_S0.npy  # Qテーブルの保存先
+
+    record_video: true
+    video_episodes: 1
+
+  # --- DQN ---
+  - id: dqn_eval
+    type: dqn_cartpole
+    env: CartPole-v1
+    env_index: 0
+
+    max_train_steps: 200000
+    eval_interval: 500
+    eval_turns: 5
+    save_interval: 0
+
+    # 学習時と同じ構成（ロード互換のため）
+    gamma: 0.99
+    net_width: 200
+    batch_size: 64
+    double: false
+    duel: false
+
+    load_model: true
+    eval_only: true
+    model_index: 200            # steps/1000（例: 200000 steps -> 200）
+
+    write: true
+    device: cuda
+
+    record_video: true
+    video_episodes: 1
+
+  # --- PER-DQN ---
+  - id: per_dqn_eval
+    type: prioritized_dqn
+    env: CartPole-v1
+    env_index: 0
+
+    max_train_steps: 200000
+    buffer_size: 100000
+    save_interval: 0
+    eval_interval: 500
+    eval_turns: 5
+
+    # 学習時と同じ構成（ロード互換のため）
+    gamma: 0.99
+    net_width: 200
+    batch_size: 64
+    ddqn: false
+
+    load_model: true
+    eval_only: true
+    model_index: 200
+
+    write: true
+    record_video: true
+    video_episodes: 1
