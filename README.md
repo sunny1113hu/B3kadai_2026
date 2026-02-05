@@ -147,14 +147,19 @@ YAML ではコメントを書けるため、メモを残したい場合に便利
 よく使う項目:
 
 - `max_train_steps`, `eval_interval`, `eval_turns`
-- `random_steps`, `buffersize`, `target_freq`
+- `random_steps`, `buffer_size`（CartPole DQN用）, `buffersize`（Atari用）, `target_freq`
 - `gamma`, `batch_size`
 - `lr_init`, `lr_end`, `lr_decay_steps`（学習率スケジューラ）
+- `exp_noise_init`, `exp_noise_end`, `noise_decay_steps`（探索率スケジューラ）
 
 ### 学習率スケジューラの挙動（線形減衰）
 - **CartPole DQN / PER**: `update_every` のタイミングで lr を更新  
 - **Atari DQN / PER**: `random_steps` 以降、学習が走るたびに lr を更新  
 （`lr_init` と `lr_end` を同じにすると固定学習率になります）
+
+### 探索率スケジューラ（CartPole DQN / PER）
+CartPole側は探索率も線形スケジュールで統一しています。  
+`exp_noise_init` → `exp_noise_end` を `noise_decay_steps` で線形に減衰させます。
 
 ### 保存済みモデルで評価だけ行う（再実行）
 学習せずに **保存済みモデルを評価だけ**したい場合は、各 run に以下を追加します。
