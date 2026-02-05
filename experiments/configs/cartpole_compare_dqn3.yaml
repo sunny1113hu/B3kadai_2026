@@ -24,8 +24,8 @@ runs:
 
     max_train_steps: 200000     # 学習ステップ総数
     eval_interval: 500          # 評価ログの記録間隔（学習中の評価頻度）
-    eval_turns: 5               # 評価エピソード数（この回数の平均スコアをCSVに記録）
-    save_interval: 200000       # モデル保存間隔（0なら最後のみ）
+    eval_turns: 1               # 評価エピソード数（この回数の平均スコアをCSVに記録）
+    save_interval: 50000        # モデル保存間隔（0なら最後のみ）
 
     write: true                 # TensorBoardへ記録するか
 
@@ -55,13 +55,17 @@ runs:
 
     max_train_steps: 200000
     eval_interval: 500          # 評価ログの記録間隔
-    eval_turns: 5               # 評価エピソード数（平均スコアを記録）
+    eval_turns: 1               # 評価エピソード数（平均スコアを記録）
     save_interval: 50000        # モデル保存間隔
 
     # 探索
     random_steps: 3000          # 学習開始前のランダム探索ステップ
-    exp_noise: 0.2              # ε-greedy相当の探索率
-    noise_decay: 0.99           # 探索率の減衰（1000ステップごとに適用）
+    buffer_size: 100000         # リプレイバッファサイズ（PERと統一）
+    exp_noise: 0.6              # 互換用（exp_noise_init/endが優先）
+    exp_noise_init: 0.6         # 探索率の初期値（PERと統一）
+    exp_noise_end: 0.03         # 探索率の最終値（PERと統一）
+    noise_decay_steps: 100000   # 何ステップでexp_noise_endに到達するか
+    noise_decay: 1.0            # 旧方式の名残（線形スケジュール使用時は実質未使用）
 
     # 学習設定
     update_every: 50            # 何ステップごとに更新するか
@@ -95,7 +99,7 @@ runs:
     buffer_size: 100000         # リプレイバッファサイズ
     save_interval: 50000
     eval_interval: 500          # 評価ログの記録間隔
-    eval_turns: 5               # 評価エピソード数（平均スコアを記録）
+    eval_turns: 1               # 評価エピソード数（平均スコアを記録）
 
     # 探索
     warmup: 3000                # 学習前のランダム探索

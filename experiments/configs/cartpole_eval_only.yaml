@@ -15,7 +15,7 @@ runs:
 
     max_train_steps: 200000     # 表示用ステップ（実学習はしない）
     eval_interval: 500          # 評価ログの記録間隔
-    eval_turns: 5               # 評価エピソード数（平均スコアを記録）
+    eval_turns: 1               # 評価エピソード数（平均スコアを記録）
     save_interval: 0            # 評価のみなので保存しない
     write: true                 # TensorBoard記録
 
@@ -47,7 +47,7 @@ runs:
 
     max_train_steps: 200000
     eval_interval: 500
-    eval_turns: 5
+    eval_turns: 1
     save_interval: 0
 
     # 学習時と同じ構成（ロード互換のため）
@@ -77,7 +77,7 @@ runs:
     buffer_size: 100000
     save_interval: 0
     eval_interval: 500
-    eval_turns: 5
+    eval_turns: 1
 
     # 学習時と同じ構成（ロード互換のため）
     gamma: 0.99

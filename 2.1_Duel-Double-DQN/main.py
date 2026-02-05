@@ -29,6 +29,7 @@ parser.add_argument('--save_interval', type=int, default=int(50e3), help='Model 
 parser.add_argument('--eval_interval', type=int, default=int(2e3), help='Model evaluating interval, in steps.')
 parser.add_argument('--eval_turns', type=int, default=3, help='Number of evaluation episodes')
 parser.add_argument('--random_steps', type=int, default=int(3e3), help='steps for random policy to explore')
+parser.add_argument('--buffer_size', type=int, default=int(1e6), help='replay buffer size')
 parser.add_argument('--update_every', type=int, default=50, help='training frequency')
 
 parser.add_argument('--gamma', type=float, default=0.99, help='Discounted Factor')
@@ -38,8 +39,11 @@ parser.add_argument('--lr_init', type=float, default=None, help='Initial learnin
 parser.add_argument('--lr_end', type=float, default=None, help='Final learning rate')
 parser.add_argument('--lr_decay_steps', type=int, default=0, help='Steps for linear LR decay (0 uses Max_train_steps)')
 parser.add_argument('--batch_size', type=int, default=256, help='lenth of sliced trajectory')
-parser.add_argument('--exp_noise', type=float, default=0.2, help='explore noise')
-parser.add_argument('--noise_decay', type=float, default=0.99, help='decay rate of explore noise')
+parser.add_argument('--exp_noise', type=float, default=0.2, help='explore noise (legacy)')
+parser.add_argument('--exp_noise_init', type=float, default=None, help='Initial explore noise (linear schedule)')
+parser.add_argument('--exp_noise_end', type=float, default=None, help='Final explore noise (linear schedule)')
+parser.add_argument('--noise_decay_steps', type=int, default=0, help='Steps for linear explore noise decay (0 uses Max_train_steps)')
+parser.add_argument('--noise_decay', type=float, default=0.99, help='decay rate of explore noise (legacy)')
 parser.add_argument('--Double', type=str2bool, default=True, help='Whether to use Double Q-learning')
 parser.add_argument('--Duel', type=str2bool, default=True, help='Whether to use Duel networks')
 opt = parser.parse_args()
@@ -49,6 +53,13 @@ if opt.lr_end is None:
     opt.lr_end = opt.lr_init
 if opt.lr_decay_steps <= 0:
     opt.lr_decay_steps = opt.Max_train_steps
+if opt.exp_noise_init is None:
+    opt.exp_noise_init = opt.exp_noise
+if opt.exp_noise_end is None:
+    opt.exp_noise_end = opt.exp_noise_init
+if opt.noise_decay_steps <= 0:
+    opt.noise_decay_steps = opt.Max_train_steps
+opt.exp_noise = opt.exp_noise_init
 opt.dvc = torch.device(opt.dvc) # from str to torch.device
 print(opt)
 
@@ -166,9 +177,9 @@ def main():
                     lr = linear_schedule(total_steps, opt.lr_decay_steps, opt.lr_init, opt.lr_end)
                     for p in agent.q_net_optimizer.param_groups:
                         p['lr'] = lr
+                    agent.exp_noise = linear_schedule(total_steps, opt.noise_decay_steps, opt.exp_noise_init, opt.exp_noise_end)
 
                 '''Noise decay & Record & Log'''
-                if total_steps % 1000 == 0: agent.exp_noise *= opt.noise_decay
                 if total_steps % opt.eval_interval == 0:
                     score = evaluate_policy(eval_env, agent, turns = opt.eval_turns)
                     if opt.write:

@@ -44,7 +44,8 @@ class DQN_agent(object):
 		# Init hyperparameters for agent, just like "self.gamma = opt.gamma, self.lambd = opt.lambd, ..."
 		self.__dict__.update(kwargs)
 		self.tau = 0.005
-		self.replay_buffer = ReplayBuffer(self.state_dim, self.dvc, max_size=int(1e6))
+		buffer_size = int(getattr(self, "buffer_size", 1e6))
+		self.replay_buffer = ReplayBuffer(self.state_dim, self.dvc, max_size=buffer_size)
 		if self.Duel:
 			self.q_net = Duel_Q_Net(self.state_dim, self.action_dim, (self.net_width,self.net_width)).to(self.dvc)
 		else:
@@ -128,7 +129,6 @@ class ReplayBuffer(object):
 	def sample(self, batch_size):
 		ind = torch.randint(0, self.size, device=self.dvc, size=(batch_size,))
 		return self.s[ind], self.a[ind], self.r[ind], self.s_next[ind], self.dw[ind]
-
 
 
 
